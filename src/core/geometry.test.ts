@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boundsOf, fitSize, fitView, MAX_ZOOM, resizeFromCorner, screenToWorld, zoomAt } from "./geometry";
+import { boundsOf, fitSize, fitView, MAX_ZOOM, screenToWorld, zoomAt } from "./geometry";
 
 describe("zoomAt", () => {
   it("keeps the world point under the cursor fixed", () => {
@@ -40,19 +40,5 @@ describe("fitSize", () => {
   });
   it("never enlarges small images", () => {
     expect(fitSize({ w: 50, h: 80 }, 400)).toEqual({ w: 50, h: 80 });
-  });
-});
-
-describe("resizeFromCorner", () => {
-  it("keeps the aspect ratio by default", () => {
-    const s = resizeFromCorner({ w: 200, h: 100 }, 100, 0, false);
-    expect(s.w / s.h).toBeCloseTo(2);
-    expect(s.w).toBe(300);
-  });
-  it("stretches freely when asked", () => {
-    expect(resizeFromCorner({ w: 200, h: 100 }, 100, 0, true)).toEqual({ w: 300, h: 100 });
-  });
-  it("respects the minimum size", () => {
-    expect(resizeFromCorner({ w: 50, h: 50 }, -500, -500, true)).toEqual({ w: 20, h: 20 });
   });
 });

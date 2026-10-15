@@ -67,17 +67,17 @@ body,
   outline: calc(2px * var(--inv, 1)) solid var(--accent);
 }
 
-/* Handles stay the same size on screen at any zoom. */
+/* Controls are centred on their anchor point and stay the same size on screen at any zoom. */
 .item .del,
-.item .grip {
+.item .handle,
+.item .rotate-handle {
   position: absolute;
-  display: none;
-  transform: scale(var(--inv, 1));
 }
 
 .item .del {
-  top: -11px;
-  right: -11px;
+  left: 100%;
+  top: 0;
+  display: none;
   width: 22px;
   height: 22px;
   padding: 0;
@@ -87,26 +87,41 @@ body,
   color: #fff;
   font: bold 14px / 22px system-ui;
   cursor: pointer;
-  transform-origin: 100% 0;
-}
-
-.item .grip {
-  right: -6px;
-  bottom: -6px;
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--bg);
-  border-radius: 3px;
-  background: var(--accent);
-  cursor: nwse-resize;
-  transform-origin: 100% 100%;
+  /* Sits just outside the top-right corner so it never covers the corner handle, and stays upright. */
+  transform: translate(-50%, -50%) scale(var(--inv, 1)) translate(16px, -16px) rotate(var(--unrotate, 0deg));
 }
 
 .item:hover .del,
-.item.selected .del,
-.item:hover .grip,
-.item.selected .grip {
+.item.selected .del {
   display: block;
+}
+
+.item .handle {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--bg);
+  border-radius: 3px;
+  background: var(--accent);
+  transform: translate(-50%, -50%) scale(var(--inv, 1));
+}
+
+.item .rotate-handle {
+  left: 50%;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: var(--bg);
+  cursor: grab;
+  transform: translate(-50%, -50%) scale(var(--inv, 1)) translateY(-26px);
+}
+
+.marquee {
+  position: absolute;
+  border: calc(1px * var(--inv, 1)) solid var(--accent);
+  background: rgb(143 184 255 / 0.12);
+  pointer-events: none;
 }
 
 .item .linked {
@@ -207,7 +222,7 @@ body,
 
 .toast {
   position: fixed;
-  bottom: 14px;
+  bottom: 64px;
   left: 50%;
   z-index: 30;
   max-width: calc(100% - 32px);
@@ -314,4 +329,51 @@ body,
 .patterns button[aria-pressed="true"] {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.selection-bar {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  max-width: calc(100% - 32px);
+  padding: 4px;
+  overflow-x: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: var(--ui);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.selection-bar .count {
+  padding: 0 6px;
+  color: var(--muted);
+}
+
+.selection-bar .sep {
+  width: 1px;
+  height: 18px;
+  background: var(--ui-border);
+}
+
+.selection-bar button {
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.selection-bar button:hover {
+  background: var(--ui-hover);
+}
+
+.selection-bar button.danger {
+  color: var(--danger);
 }

@@ -1,38 +1,5 @@
-import { readFileSync } from "node:fs";
-import { expect, type Page, test } from "@playwright/test";
-
-const jpeg = readFileSync(new URL("./fixture.jpg", import.meta.url)).toString("base64");
-const items = (page: Page) => page.getByTestId("board-item");
-
-/** Fires a real drop event on the window, as a browser does when you let go of a drag. */
-async function drop(page: Page, x: number, y: number, kind: "file" | "google-html") {
-  await page.evaluate(
-    ({ x, y, kind, jpeg }) => {
-      const dt = new DataTransfer();
-      if (kind === "file") {
-        const bytes = Uint8Array.from(atob(jpeg), (c) => c.charCodeAt(0));
-        dt.items.add(new File([bytes], "ref.jpg", { type: "image/jpeg" }));
-      } else {
-        // What a browser hands over when you drag a thumbnail out of Google Images.
-        dt.setData(
-          "text/html",
-          `<a href="https://www.google.com/imgres?q=1"><img src="data:image/jpeg;base64,${jpeg}"></a>`,
-        );
-        dt.setData("text/uri-list", "https://www.google.com/imgres?q=1");
-      }
-      window.dispatchEvent(
-        new DragEvent("drop", { dataTransfer: dt, clientX: x, clientY: y, bubbles: true, cancelable: true }),
-      );
-    },
-    { x, y, kind, jpeg },
-  );
-}
-
-async function box(page: Page, index = 0) {
-  const b = await items(page).nth(index).boundingBox();
-  if (!b) throw new Error("item not visible");
-  return b;
-}
+import { expect, test } from "@playwright/test";
+import { box, drop, items, jpeg } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
@@ -73,7 +40,7 @@ test("moves, resizes, undoes and redoes", async ({ page }) => {
   const moved = await box(page);
   expect(moved.x - start.x).toBeCloseTo(100, 0);
 
-  const grip = page.locator(".item.selected .grip");
+  const grip = page.locator('.item.selected [data-handle="se"]');
   const g = await grip.boundingBox();
   if (!g) throw new Error("no grip");
   await page.mouse.move(g.x + 7, g.y + 7);

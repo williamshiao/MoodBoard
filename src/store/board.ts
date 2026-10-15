@@ -1,24 +1,32 @@
 import { create } from "zustand";
 import { type BoardSettings, DEFAULT_SETTINGS } from "../core/background";
 import { applySide, diff, type HistoryState, record } from "../core/history";
-import type { BoardItem, Items, View } from "../core/types";
+import { normalizeDegrees } from "../core/transform";
+import { type BoardItem, type Items, TRANSFORM_DEFAULTS, type View } from "../core/types";
+
+type NewItem = Omit<BoardItem, "z" | keyof typeof TRANSFORM_DEFAULTS>;
 
 interface BoardState {
   items: Items;
   view: View;
   settings: BoardSettings;
-  selectedId: string | null;
+  /** Selected item ids; the last one is the most recently selected. */
+  selectedIds: readonly string[];
   history: HistoryState;
 
-  /** Adds an item on top of everything else (undoable). */
-  add(item: Omit<BoardItem, "z">): void;
+  /** Adds an item on top of everything else and selects it (undoable). */
+  add(item: NewItem): void;
   /** Live update during a gesture; not recorded until `commit`. */
-  preview(id: string, patch: Partial<BoardItem>): void;
-  /** Records the change from `before` to the item's current state as one undo step. */
-  commit(before: BoardItem): void;
-  remove(id: string): void;
+  preview(patches: Record<string, Partial<BoardItem>>): void;
+  /** Records the change from `before` to the items' current state as one undo step. */
+  commit(before: readonly BoardItem[]): void;
+  /** Applies `fn` to each listed item as one undo step. */
+  update(ids: readonly string[], fn: (item: BoardItem) => Partial<BoardItem>): void;
+  remove(ids: readonly string[]): void;
   clear(): void;
-  select(id: string | null): void;
+  /** Selects one item (raising it to the top), or toggles it when `toggle` is set. */
+  select(id: string, toggle?: boolean): void;
+  selectOnly(ids: readonly string[]): void;
   setView(view: View): void;
   /** Background color and grid pattern. Saved with the board; not an undo step. */
   setSettings(patch: Partial<BoardSettings>): void;
@@ -30,6 +38,12 @@ interface BoardState {
 
 const topZ = (items: Items) => Object.values(items).reduce((m, i) => Math.max(m, i.z), 0);
 
+/** Transform actions shared by the toolbar and keyboard shortcuts. */
+export const flipX = (i: BoardItem) => ({ flipX: !i.flipX });
+export const flipY = (i: BoardItem) => ({ flipY: !i.flipY });
+export const rotateBy = (deg: number) => (i: BoardItem) => ({ rotation: normalizeDegrees(i.rotation + deg) });
+export const resetTransform = () => ({ ...TRANSFORM_DEFAULTS });
+
 export const useBoard = create<BoardState>()((set, get) => {
   /** Applies `updates` to the items and records them as one undo step. */
   const change = (updates: Record<string, BoardItem | null>) => {
@@ -37,51 +51,86 @@ export const useBoard = create<BoardState>()((set, get) => {
     const c = diff(items, updates);
     set({ items: applySide(items, c.after), history: record(history, c) });
   };
+  /** Drops selected ids whose items no longer exist (after undo, redo or remove). */
+  const pruneSelection = () => {
+    const { items, selectedIds } = get();
+    const kept = selectedIds.filter((id) => items[id]);
+    if (kept.length !== selectedIds.length) set({ selectedIds: kept });
+  };
 
   return {
     items: {},
     view: { x: 0, y: 0, zoom: 1 },
     settings: DEFAULT_SETTINGS,
-    selectedId: null,
+    selectedIds: [],
     history: { past: [], future: [] },
 
     add(item) {
-      change({ [item.id]: { ...item, z: topZ(get().items) + 1 } });
-      set({ selectedId: item.id });
+      change({ [item.id]: { ...TRANSFORM_DEFAULTS, ...item, z: topZ(get().items) + 1 } });
+      set({ selectedIds: [item.id] });
     },
 
-    preview(id, patch) {
-      const item = get().items[id];
-      if (item) set({ items: { ...get().items, [id]: { ...item, ...patch } } });
+    preview(patches) {
+      const next = { ...get().items };
+      for (const [id, patch] of Object.entries(patches)) {
+        const item = next[id];
+        if (item) next[id] = { ...item, ...patch };
+      }
+      set({ items: next });
     },
 
     commit(before) {
       const { items, history } = get();
-      const now = items[before.id];
-      if (!now) return;
-      set({ history: record(history, { before: { [before.id]: before }, after: { [before.id]: now } }) });
+      const c = {
+        before: {} as Record<string, BoardItem | null>,
+        after: {} as Record<string, BoardItem | null>,
+      };
+      for (const b of before) {
+        const now = items[b.id];
+        if (!now) continue;
+        c.before[b.id] = b;
+        c.after[b.id] = now;
+      }
+      set({ history: record(history, c) });
     },
 
-    remove(id) {
-      if (!get().items[id]) return;
-      change({ [id]: null });
-      if (get().selectedId === id) set({ selectedId: null });
+    update(ids, fn) {
+      const { items } = get();
+      const updates: Record<string, BoardItem> = {};
+      for (const id of ids) {
+        const item = items[id];
+        if (item) updates[id] = { ...item, ...fn(item) };
+      }
+      if (Object.keys(updates).length) change(updates);
+    },
+
+    remove(ids) {
+      const updates: Record<string, null> = {};
+      for (const id of ids) if (get().items[id]) updates[id] = null;
+      if (!Object.keys(updates).length) return;
+      change(updates);
+      pruneSelection();
     },
 
     clear() {
-      const updates: Record<string, null> = {};
-      for (const id of Object.keys(get().items)) updates[id] = null;
-      change(updates);
-      set({ selectedId: null });
+      get().remove(Object.keys(get().items));
     },
 
-    select(id) {
-      const { items } = get();
-      const item = id ? items[id] : undefined;
+    select(id, toggle = false) {
+      const { items, selectedIds } = get();
+      const item = items[id];
+      if (!item) return;
+      if (toggle && selectedIds.includes(id)) {
+        set({ selectedIds: selectedIds.filter((s) => s !== id) });
+        return;
+      }
       // Selecting raises the image to the top. This is not an undo step on its own.
-      if (item && item.z !== topZ(items))
-        set({ items: { ...items, [item.id]: { ...item, z: topZ(items) + 1 } } });
-      set({ selectedId: id });
+      if (item.z !== topZ(items)) set({ items: { ...items, [id]: { ...item, z: topZ(items) + 1 } } });
+      set({ selectedIds: toggle ? [...selectedIds, id] : [id] });
+    },
+
+    selectOnly(ids) {
+      set({ selectedIds: ids.filter((id) => get().items[id]) });
     },
 
     setView(view) {
@@ -93,7 +142,7 @@ export const useBoard = create<BoardState>()((set, get) => {
     },
 
     load(items, view, settings = DEFAULT_SETTINGS) {
-      set({ items, view, settings, selectedId: null, history: { past: [], future: [] } });
+      set({ items, view, settings, selectedIds: [], history: { past: [], future: [] } });
     },
 
     undo() {
@@ -103,8 +152,8 @@ export const useBoard = create<BoardState>()((set, get) => {
       set({
         items: applySide(items, c.before),
         history: { past: history.past.slice(0, -1), future: [...history.future, c] },
-        selectedId: null,
       });
+      pruneSelection();
     },
 
     redo() {
@@ -114,8 +163,8 @@ export const useBoard = create<BoardState>()((set, get) => {
       set({
         items: applySide(items, c.after),
         history: { past: [...history.past, c], future: history.future.slice(0, -1) },
-        selectedId: null,
       });
+      pruneSelection();
     },
   };
 });

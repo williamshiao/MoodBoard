@@ -52,18 +52,3 @@ export function fitSize(natural: Size, maxSide: number): Size {
   const s = Math.min(1, maxSide / Math.max(natural.w, natural.h, 1));
   return { w: natural.w * s, h: natural.h * s };
 }
-
-/**
- * New size after dragging the bottom-right corner by (dx, dy) in world units.
- * Keeps the starting aspect ratio unless `free` is set.
- */
-export function resizeFromCorner(start: Size, dx: number, dy: number, free: boolean, min = 20): Size {
-  let w = Math.max(min, start.w + dx);
-  let h = Math.max(min, start.h + dy);
-  if (!free) {
-    const ratio = start.w / start.h;
-    if (w / h > ratio) h = w / ratio;
-    else w = h * ratio;
-  }
-  return { w, h };
-}
