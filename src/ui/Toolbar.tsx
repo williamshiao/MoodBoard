@@ -8,6 +8,7 @@ export function Toolbar() {
   const canUndo = useBoard((s) => s.history.past.length > 0);
   const canRedo = useBoard((s) => s.history.future.length > 0);
   const empty = useBoard((s) => Object.keys(s.items).length === 0);
+  const snap = useBoard((s) => s.settings.snap);
   const fileInput = useRef<HTMLInputElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const closeSettings = useCallback(() => setSettingsOpen(false), []);
@@ -66,6 +67,14 @@ export function Toolbar() {
           }}
         />
         <span className="sep" />
+        <button
+          type="button"
+          title="Snap images to each other's edges and centres while dragging (hold Alt to skip once)"
+          aria-pressed={snap}
+          onClick={() => useBoard.getState().setSettings({ snap: !snap })}
+        >
+          Snap
+        </button>
         <button
           type="button"
           title="Background and grid"

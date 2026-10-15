@@ -105,6 +105,10 @@ function useShortcuts() {
         e.preventDefault();
         const up = e.code === "BracketRight";
         s.restack(e.shiftKey ? (up ? "front" : "back") : up ? "forward" : "backward");
+      } else if (mod && key === "g") {
+        e.preventDefault();
+        if (e.shiftKey) s.ungroup();
+        else s.group();
       } else if (mod && key === "z") {
         e.preventDefault();
         if (e.shiftKey) s.redo();

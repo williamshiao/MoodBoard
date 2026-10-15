@@ -122,7 +122,7 @@ describe("board store", () => {
   it("updates settings without touching undo history", () => {
     s().setSettings({ grid: "lines" });
     s().setSettings({ background: "#ffffff" });
-    expect(s().settings).toEqual({ background: "#ffffff", grid: "lines" });
+    expect(s().settings).toEqual({ background: "#ffffff", grid: "lines", snap: true });
     expect(s().history.past).toHaveLength(0);
   });
 
@@ -137,5 +137,63 @@ describe("board store", () => {
     s().undo();
     s().add(img("b"));
     expect(s().history.future).toHaveLength(0);
+  });
+});
+
+describe("groups", () => {
+  beforeEach(() => {
+    for (const [id, x] of [
+      ["a", 0],
+      ["b", 200],
+      ["c", 400],
+    ] as const)
+      s().add(img(id, x));
+  });
+
+  it("groups the selection so clicking one image selects the whole group", () => {
+    s().selectOnly(["a", "b"]);
+    s().group();
+    expect(item("a").group).toBeTruthy();
+    expect(item("a").group).toBe(item("b").group);
+    expect(item("c").group).toBeNull();
+    s().select("a");
+    expect([...s().selectedIds].sort()).toEqual(["a", "b"]);
+  });
+
+  it("toggles a whole group in and out of the selection", () => {
+    s().selectOnly(["a", "b"]);
+    s().group();
+    s().select("c");
+    s().select("b", true);
+    expect([...s().selectedIds].sort()).toEqual(["a", "b", "c"]);
+    s().select("a", true);
+    expect(s().selectedIds).toEqual(["c"]);
+  });
+
+  it("picks one grouped image out on its own", () => {
+    s().selectOnly(["a", "b"]);
+    s().group();
+    s().selectSingle("b");
+    expect(s().selectedIds).toEqual(["b"]);
+  });
+
+  it("merges groups when grouping across them, and ungroups as one undo step", () => {
+    s().selectOnly(["a", "b"]);
+    s().group();
+    s().selectOnly(["b", "c"]);
+    s().group();
+    expect(new Set([item("a").group, item("b").group, item("c").group]).size).toBe(1);
+    s().select("c");
+    s().ungroup();
+    expect([item("a").group, item("b").group, item("c").group]).toEqual([null, null, null]);
+    s().undo();
+    expect(item("a").group).toBeTruthy();
+  });
+
+  it("keeps groups through reset edits", () => {
+    s().selectOnly(["a", "b"]);
+    s().group();
+    s().update(["a"], resetEdits);
+    expect(item("a").group).toBeTruthy();
   });
 });

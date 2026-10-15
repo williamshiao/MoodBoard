@@ -12,6 +12,9 @@ the clipboard) and arrange them on an infinite canvas.
 - Invert colours (I) and desaturate (D) without changing the original image
 - Layering: bring to front or forward, send backward or to back (Ctrl+] / Ctrl+[, add Shift for front/back)
 - Select several images with Shift+click, Shift+drag or Ctrl+A, then move, mirror, rotate or delete them together
+- Group images (Ctrl+G) so they select and move as one; double-click picks one out, Ctrl+Shift+G ungroups
+- Snapping: dragged images line up with the edges and centres of others, with guide lines (toggle with Snap,
+  or hold Alt to skip it for one drag)
 - Pan by dragging empty space, zoom toward the cursor with the wheel or a pinch, press F to fit everything
 - Undo/redo for every change (Ctrl+Z / Ctrl+Shift+Z)
 - Board settings: any background color, and a dots, lines, graph-paper or blank grid
@@ -68,6 +71,6 @@ pnpm build && pnpm size
 2. ~~Board settings: background color and grid patterns~~
 3. ~~Transform tools: multi-select, 8-handle resize/stretch, rotate, mirror~~
 4. ~~Look tools: invert, desaturate, layering~~
-5. Organizing: snapping guides (toggle) and groups
+5. ~~Organizing: snapping guides (toggle) and groups~~
 6. Desktop: Tauri 2 build with native image download
 7. Polish: offline install (PWA), export as PNG, shortcut sheet, performance pass

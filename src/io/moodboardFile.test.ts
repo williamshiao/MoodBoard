@@ -17,6 +17,7 @@ const item = (id: string, source: BoardItem["source"]): BoardItem => ({
   flipY: false,
   invert: false,
   grayscale: false,
+  group: null,
 });
 
 describe(".moodboard files", () => {
@@ -28,7 +29,7 @@ describe(".moodboard files", () => {
     };
     const view = { x: 5, y: 6, zoom: 1.5 };
 
-    const settings = { background: "#f4f1ea", grid: "graph" as const };
+    const settings = { background: "#f4f1ea", grid: "graph" as const, snap: false };
 
     const bytes = await exportBoard(items, view, settings, (id) => (id === "a" ? blob : undefined));
     const back = importBoard(bytes);

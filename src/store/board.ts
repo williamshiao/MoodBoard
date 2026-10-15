@@ -1,11 +1,13 @@
 import { create } from "zustand";
-import { type BoardSettings, DEFAULT_SETTINGS } from "../core/background";
+import { type BoardSettings, DEFAULT_SETTINGS, withSettingsDefaults } from "../core/background";
+import { withGroups } from "../core/groups";
 import { applySide, diff, type HistoryState, record } from "../core/history";
+import { newId } from "../core/id";
 import { type LayerMove, restack } from "../core/layers";
 import { normalizeDegrees } from "../core/transform";
 import { type BoardItem, ITEM_DEFAULTS, type Items, type View } from "../core/types";
 
-type NewItem = Omit<BoardItem, "z" | keyof typeof ITEM_DEFAULTS>;
+type NewItem = Omit<BoardItem, "z" | "group" | keyof typeof ITEM_DEFAULTS>;
 
 interface BoardState {
   items: Items;
@@ -27,10 +29,16 @@ interface BoardState {
   toggleFilter(field: "invert" | "grayscale"): void;
   /** Moves the selected images up or down the stack (undoable). */
   restack(move: LayerMove): void;
+  /** Joins the selected images (and any groups they belong to) into one group (undoable). */
+  group(): void;
+  /** Splits every group the selection touches back into single images (undoable). */
+  ungroup(): void;
   remove(ids: readonly string[]): void;
   clear(): void;
-  /** Selects one item, or toggles it in or out of the selection when `toggle` is set. */
+  /** Selects one item and the rest of its group, or toggles them in or out when `toggle` is set. */
   select(id: string, toggle?: boolean): void;
+  /** Selects one image on its own, even if it is grouped, so it can be edited alone. */
+  selectSingle(id: string): void;
   selectOnly(ids: readonly string[]): void;
   setView(view: View): void;
   /** Background color and grid pattern. Saved with the board; not an undo step. */
@@ -71,7 +79,7 @@ export const useBoard = create<BoardState>()((set, get) => {
     history: { past: [], future: [] },
 
     add(item) {
-      change({ [item.id]: { ...ITEM_DEFAULTS, ...item, z: topZ(get().items) + 1 } });
+      change({ [item.id]: { ...ITEM_DEFAULTS, ...item, group: null, z: topZ(get().items) + 1 } });
       set({ selectedIds: [item.id] });
     },
 
@@ -121,6 +129,21 @@ export const useBoard = create<BoardState>()((set, get) => {
       get().update(Object.keys(z), (i) => ({ z: z[i.id] ?? i.z }));
     },
 
+    group() {
+      const { items, selectedIds } = get();
+      const ids = withGroups(items, selectedIds);
+      if (ids.length < 2) return;
+      const group = newId();
+      get().update(ids, () => ({ group }));
+      set({ selectedIds: ids });
+    },
+
+    ungroup() {
+      const { items, selectedIds } = get();
+      const ids = withGroups(items, selectedIds).filter((id) => items[id]?.group);
+      get().update(ids, () => ({ group: null }));
+    },
+
     remove(ids) {
       const updates: Record<string, null> = {};
       for (const id of ids) if (get().items[id]) updates[id] = null;
@@ -136,11 +159,16 @@ export const useBoard = create<BoardState>()((set, get) => {
     select(id, toggle = false) {
       const { items, selectedIds } = get();
       if (!items[id]) return;
+      const ids = withGroups(items, [id]);
       if (toggle && selectedIds.includes(id)) {
-        set({ selectedIds: selectedIds.filter((s) => s !== id) });
+        set({ selectedIds: selectedIds.filter((s) => !ids.includes(s)) });
         return;
       }
-      set({ selectedIds: toggle ? [...selectedIds, id] : [id] });
+      set({ selectedIds: toggle ? [...new Set([...selectedIds, ...ids])] : ids });
+    },
+
+    selectSingle(id) {
+      if (get().items[id]) set({ selectedIds: [id] });
     },
 
     selectOnly(ids) {
@@ -155,8 +183,14 @@ export const useBoard = create<BoardState>()((set, get) => {
       set({ settings: { ...get().settings, ...patch } });
     },
 
-    load(items, view, settings = DEFAULT_SETTINGS) {
-      set({ items, view, settings, selectedIds: [], history: { past: [], future: [] } });
+    load(items, view, settings) {
+      set({
+        items,
+        view,
+        settings: withSettingsDefaults(settings),
+        selectedIds: [],
+        history: { past: [], future: [] },
+      });
     },
 
     undo() {

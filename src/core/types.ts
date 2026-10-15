@@ -34,6 +34,8 @@ export interface BoardItem extends Rect {
   /** Colour filters, applied on top of the original pixels (which are never changed). */
   invert: boolean;
   grayscale: boolean;
+  /** Images sharing a group id are selected and moved together; null when ungrouped. */
+  group: string | null;
 }
 
 /** Defaults for the edit fields, which boards saved by older versions may be missing. */
@@ -45,14 +47,15 @@ export const ITEM_DEFAULTS = {
   grayscale: false,
 } as const;
 
-type EditFields = keyof typeof ITEM_DEFAULTS;
+type OptionalFields = keyof typeof ITEM_DEFAULTS | "group";
 
-/** Fills in edit fields for items saved by older versions. */
+/** Fills in edit fields and the group for items saved by older versions. */
 export function withItemDefaults(
-  item: Omit<BoardItem, EditFields> & { [K in EditFields]?: BoardItem[K] | undefined },
+  item: Omit<BoardItem, OptionalFields> & { [K in OptionalFields]?: BoardItem[K] | undefined },
 ): BoardItem {
   return {
     ...item,
+    group: item.group ?? null,
     rotation: item.rotation ?? ITEM_DEFAULTS.rotation,
     flipX: item.flipX ?? ITEM_DEFAULTS.flipX,
     flipY: item.flipY ?? ITEM_DEFAULTS.flipY,

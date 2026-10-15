@@ -1,6 +1,6 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { z } from "zod/mini";
-import { type BoardSettings, DEFAULT_SETTINGS, GRID_PATTERNS } from "../core/background";
+import { type BoardSettings, GRID_PATTERNS, withSettingsDefaults } from "../core/background";
 import { type BoardItem, type Items, type View, withItemDefaults } from "../core/types";
 
 /**
@@ -25,6 +25,7 @@ const ItemSchema = z.object({
   flipY: z.optional(z.boolean()),
   invert: z.optional(z.boolean()),
   grayscale: z.optional(z.boolean()),
+  group: z.optional(z.nullable(z.string())),
   type: z.optional(z.string()),
 });
 
@@ -38,6 +39,7 @@ const BoardSchema = z.object({
     z.object({
       background: z.string().check(z.regex(/^#[0-9a-f]{6}$/i)),
       grid: z.enum(GRID_PATTERNS),
+      snap: z.optional(z.boolean()),
     }),
   ),
 });
@@ -85,5 +87,5 @@ export function importBoard(bytes: Uint8Array): ImportedBoard {
     }
     items[item.id] = withItemDefaults(item);
   }
-  return { items, view: board.view, settings: board.settings ?? DEFAULT_SETTINGS, blobs };
+  return { items, view: board.view, settings: withSettingsDefaults(board.settings), blobs };
 }
