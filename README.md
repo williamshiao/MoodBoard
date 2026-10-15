@@ -20,6 +20,12 @@ the clipboard) and arrange them on an infinite canvas.
 - Board settings: any background color, and a dots, lines, graph-paper or blank grid
 - Autosaves in the browser. Export/Import a portable `.moodboard` file (zip of board.json + original images)
 
+## Desktop app
+
+The same app also ships as a small desktop program for Windows, macOS and Linux, built with Tauri 2. On the
+desktop, images dragged in from any website are always saved into the board, even from sites that block
+browsers from copying them. Installers are attached to each [release](../../releases).
+
 ## Stack
 
 | | |
@@ -30,6 +36,7 @@ the clipboard) and arrange them on an infinite canvas.
 | Storage | IndexedDB (`idb`); `.moodboard` files via `fflate` + `zod/mini` |
 | Tooling | Vite, pnpm, Biome, Vitest, Playwright, size-limit |
 | Delivery | Static site on GitHub Pages, no backend ([ADR 2](docs/adr/0002-static-web-app-first.md)) |
+| Desktop | Tauri 2 shell around the same build ([ADR 4](docs/adr/0004-tauri-desktop-shell.md)) |
 
 ## Architecture
 
@@ -43,6 +50,7 @@ src/
   board/     the canvas: pan, zoom, move, resize
   ui/        toolbar, hint, toast
   app/       actions wiring the pieces together
+src-tauri/   desktop shell (Rust): window, native image download, installers
 ```
 
 ## Development
@@ -55,6 +63,8 @@ pnpm typecheck
 pnpm test         # unit tests
 pnpm test:e2e     # browser tests (run `pnpm exec playwright install` once)
 pnpm build && pnpm size
+pnpm desktop      # desktop app in dev mode (needs Rust and the Tauri prerequisites)
+pnpm tauri build  # desktop installers for this OS
 ```
 
 ## Pipeline
@@ -63,7 +73,9 @@ pnpm build && pnpm size
   and Playwright tests in Chromium and Firefox.
 - **Deploy** (push to `main`): builds and publishes to GitHub Pages. Enable it once under
   Settings → Pages → Source: GitHub Actions.
-- **Dependabot** keeps dependencies and actions current.
+- **Desktop builds** (publishing a GitHub Release): builds Windows, macOS and Linux installers and attaches
+  them to the release. CI also runs rustfmt and clippy on the Rust shell for every PR.
+- **Dependabot** keeps npm, Cargo and Actions dependencies current.
 
 ## Roadmap
 
@@ -72,5 +84,5 @@ pnpm build && pnpm size
 3. ~~Transform tools: multi-select, 8-handle resize/stretch, rotate, mirror~~
 4. ~~Look tools: invert, desaturate, layering~~
 5. ~~Organizing: snapping guides (toggle) and groups~~
-6. Desktop: Tauri 2 build with native image download
+6. ~~Desktop: Tauri 2 build with native image download~~
 7. Polish: offline install (PWA), export as PNG, shortcut sheet, performance pass

@@ -1,0 +1,29 @@
+[package]
+name = "moodboard"
+version = "2.0.0"
+description = "A fast, lightweight mood board for artists"
+authors = ["William Shiao"]
+license = ""
+repository = "https://github.com/williamshiao/MoodBoard"
+edition = "2024"
+rust-version = "1.90"
+
+[lib]
+name = "moodboard_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.3", features = [] }
+
+[dependencies]
+tauri = { version = "2.12.4", features = [] }
+# Lets the app download images that a web page would be blocked from reading (CORS).
+tauri-plugin-http = "2.8"
+
+[profile.release]
+# Small installers: the app is a thin shell around the web build.
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

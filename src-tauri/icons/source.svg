@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="MoodBoard">
+  <title>MoodBoard</title>
+  <rect width="1024" height="1024" rx="220" fill="#1b1b1e"/>
+  <g fill="#ffffff" fill-opacity="0.09">
+    <circle cx="192" cy="192" r="14"/><circle cx="512" cy="192" r="14"/><circle cx="832" cy="192" r="14"/>
+    <circle cx="192" cy="832" r="14"/><circle cx="512" cy="832" r="14"/><circle cx="832" cy="832" r="14"/>
+  </g>
+  <rect x="190" y="300" width="380" height="290" rx="28" fill="#8fb8ff" transform="rotate(-9 380 445)"/>
+  <rect x="470" y="250" width="330" height="420" rx="28" fill="#ff5fa2" transform="rotate(7 635 460)"/>
+  <rect x="300" y="520" width="420" height="270" rx="28" fill="#f4f1ea" transform="rotate(-2 510 655)"/>
+</svg>
