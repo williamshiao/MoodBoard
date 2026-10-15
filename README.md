@@ -11,6 +11,7 @@ the clipboard) and arrange them on an infinite canvas.
 - Move, resize (Shift for free stretch), delete
 - Pan by dragging empty space, zoom toward the cursor with the wheel or a pinch, press F to fit everything
 - Undo/redo for every change (Ctrl+Z / Ctrl+Shift+Z)
+- Board settings: any background color, and a dots, lines, graph-paper or blank grid
 - Autosaves in the browser. Export/Import a portable `.moodboard` file (zip of board.json + original images)
 
 ## Stack
@@ -61,7 +62,7 @@ pnpm build && pnpm size
 ## Roadmap
 
 1. ~~Foundation: project, prototype port, undo/redo, CI and deploy~~
-2. Board settings: background color and grid patterns
+2. ~~Board settings: background color and grid patterns~~
 3. Transform tools: multi-select, 8-handle resize/stretch, rotate, mirror
 4. Look tools: invert, desaturate, opacity, layering
 5. Organizing: snapping guides (toggle) and groups

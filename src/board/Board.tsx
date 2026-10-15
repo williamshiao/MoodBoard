@@ -1,4 +1,5 @@
 import { type PointerEvent, useEffect, useRef, useState, type WheelEvent } from "react";
+import { backgroundStyle } from "../core/background";
 import { resizeFromCorner, zoomAt } from "../core/geometry";
 import type { BoardItem, View } from "../core/types";
 import { useBoard } from "../store/board";
@@ -8,11 +9,9 @@ type Gesture =
   | { kind: "pan"; start: { x: number; y: number }; view: View }
   | { kind: "move" | "resize"; start: { x: number; y: number }; item: BoardItem };
 
-/** Grid spacing in world units. */
-const GRID = 24;
-
 export function Board() {
   const view = useBoard((s) => s.view);
+  const settings = useBoard((s) => s.settings);
   // Only the id list matters here; ItemView subscribes to each item's details.
   const ids = useBoard((s) => Object.keys(s.items).join(","));
   const gesture = useRef<Gesture | null>(null);
@@ -82,13 +81,12 @@ export function Board() {
     if (g && g.kind !== "pan") useBoard.getState().commit(g.item);
   }
 
-  const size = GRID * view.zoom;
   return (
     <div
       ref={boardRef}
       className={`board${panning ? " panning" : ""}`}
       data-testid="board"
-      style={{ backgroundSize: `${size}px ${size}px`, backgroundPosition: `${view.x}px ${view.y}px` }}
+      style={backgroundStyle(settings, view)}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endGesture}
