@@ -96,6 +96,15 @@ function useShortcuts() {
         s.update(selection, flipY);
       } else if (!mod && selection.length && key === "r") {
         s.update(selection, rotateBy(e.shiftKey ? -90 : 90));
+      } else if (!mod && selection.length && key === "i") {
+        s.toggleFilter("invert");
+      } else if (!mod && selection.length && key === "d") {
+        s.toggleFilter("grayscale");
+      } else if (mod && selection.length && (e.code === "BracketRight" || e.code === "BracketLeft")) {
+        // e.code, not e.key: Shift turns "]" into "}" on most layouts.
+        e.preventDefault();
+        const up = e.code === "BracketRight";
+        s.restack(e.shiftKey ? (up ? "front" : "back") : up ? "forward" : "backward");
       } else if (mod && key === "z") {
         e.preventDefault();
         if (e.shiftKey) s.redo();

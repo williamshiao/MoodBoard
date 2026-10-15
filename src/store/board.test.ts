@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { flipX, resetTransform, rotateBy, useBoard } from "./board";
+import { flipX, resetEdits, rotateBy, useBoard } from "./board";
 
 const img = (id: string, x = 0) => ({ id, source: { kind: "blob" as const }, x, y: 0, w: 100, h: 100 });
 const s = () => useBoard.getState();
@@ -81,11 +81,42 @@ describe("board store", () => {
     s().update(["a"], flipX);
     s().update(["a"], rotateBy(-90));
     expect(item("a")).toMatchObject({ flipX: true, rotation: 270 });
-    s().update(["a"], resetTransform);
+    s().update(["a"], resetEdits);
     expect(item("a")).toMatchObject({ flipX: false, rotation: 0 });
     s().undo();
     s().undo();
     expect(item("a")).toMatchObject({ flipX: true, rotation: 0 });
+  });
+
+  it("toggles a filter on for all selected images, then off once they all have it", () => {
+    s().add(img("a"));
+    s().add(img("b"));
+    s().update(["a"], () => ({ invert: true }));
+    s().selectOnly(["a", "b"]);
+    s().toggleFilter("invert");
+    expect([item("a").invert, item("b").invert]).toEqual([true, true]);
+    s().toggleFilter("invert");
+    expect([item("a").invert, item("b").invert]).toEqual([false, false]);
+    s().undo();
+    expect([item("a").invert, item("b").invert]).toEqual([true, true]);
+  });
+
+  it("restacks the selection as one undoable step", () => {
+    s().add(img("a"));
+    s().add(img("b"));
+    s().selectOnly(["b"]);
+    s().restack("back");
+    expect(item("b").z).toBeLessThan(item("a").z);
+    s().undo();
+    expect(item("b").z).toBeGreaterThan(item("a").z);
+  });
+
+  it("does not change the stacking order just by selecting", () => {
+    s().add(img("a"));
+    s().add(img("b"));
+    const z = item("a").z;
+    s().select("a");
+    expect(item("a").z).toBe(z);
   });
 
   it("updates settings without touching undo history", () => {

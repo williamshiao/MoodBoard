@@ -31,24 +31,33 @@ export interface BoardItem extends Rect {
   /** Mirrored left-to-right / top-to-bottom. */
   flipX: boolean;
   flipY: boolean;
+  /** Colour filters, applied on top of the original pixels (which are never changed). */
+  invert: boolean;
+  grayscale: boolean;
 }
 
-/** The transform fields, which boards saved before they existed are missing. */
-export const TRANSFORM_DEFAULTS = { rotation: 0, flipX: false, flipY: false } as const;
+/** Defaults for the edit fields, which boards saved by older versions may be missing. */
+export const ITEM_DEFAULTS = {
+  rotation: 0,
+  flipX: false,
+  flipY: false,
+  invert: false,
+  grayscale: false,
+} as const;
 
-/** Fills in transform fields for items saved by older versions. */
-export function withTransformDefaults(
-  item: Omit<BoardItem, keyof typeof TRANSFORM_DEFAULTS> & {
-    rotation?: number | undefined;
-    flipX?: boolean | undefined;
-    flipY?: boolean | undefined;
-  },
+type EditFields = keyof typeof ITEM_DEFAULTS;
+
+/** Fills in edit fields for items saved by older versions. */
+export function withItemDefaults(
+  item: Omit<BoardItem, EditFields> & { [K in EditFields]?: BoardItem[K] | undefined },
 ): BoardItem {
   return {
     ...item,
-    rotation: item.rotation ?? TRANSFORM_DEFAULTS.rotation,
-    flipX: item.flipX ?? TRANSFORM_DEFAULTS.flipX,
-    flipY: item.flipY ?? TRANSFORM_DEFAULTS.flipY,
+    rotation: item.rotation ?? ITEM_DEFAULTS.rotation,
+    flipX: item.flipX ?? ITEM_DEFAULTS.flipX,
+    flipY: item.flipY ?? ITEM_DEFAULTS.flipY,
+    invert: item.invert ?? ITEM_DEFAULTS.invert,
+    grayscale: item.grayscale ?? ITEM_DEFAULTS.grayscale,
   };
 }
 

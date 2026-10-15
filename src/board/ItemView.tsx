@@ -20,6 +20,10 @@ const HANDLE_ANGLES: Record<string, number> = {
 const cursorFor = (name: string, rotation: number) =>
   RESIZE_CURSORS[Math.round(((HANDLE_ANGLES[name] ?? 0) + rotation) / 45) % 4];
 
+/** CSS filter for an image's colour edits; the original pixels are never changed. */
+const filterFor = (item: { invert: boolean; grayscale: boolean }) =>
+  [item.invert && "invert(1)", item.grayscale && "grayscale(1)"].filter(Boolean).join(" ") || undefined;
+
 /** One image on the board. Subscribes only to its own item, so dragging one image re-renders one image. */
 export const ItemView = memo(function ItemView({ id }: { id: string }) {
   const item = useBoard((s) => s.items[id]);
@@ -52,11 +56,11 @@ export const ItemView = memo(function ItemView({ id }: { id: string }) {
         alt=""
         draggable={false}
         decoding="async"
-        style={
-          item.flipX || item.flipY
-            ? { transform: `scale(${item.flipX ? -1 : 1}, ${item.flipY ? -1 : 1})` }
-            : undefined
-        }
+        style={{
+          transform:
+            item.flipX || item.flipY ? `scale(${item.flipX ? -1 : 1}, ${item.flipY ? -1 : 1})` : undefined,
+          filter: filterFor(item),
+        }}
       />
       {linked && <span className="linked">linked</span>}
       <button type="button" className="del" data-role="delete" aria-label="Remove image" title="Remove (Del)">
