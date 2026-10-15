@@ -54,7 +54,10 @@ test("pastes an image from the clipboard", async ({ page }) => {
     dt.items.add(
       new File([Uint8Array.from(atob(jpeg), (c) => c.charCodeAt(0))], "image.jpg", { type: "image/jpeg" }),
     );
-    window.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+    const event = new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true });
+    // Firefox ignores clipboardData in the constructor (real pastes still carry it), so attach it directly.
+    if (!event.clipboardData?.files.length) Object.defineProperty(event, "clipboardData", { value: dt });
+    window.dispatchEvent(event);
   }, jpeg);
   await expect(items(page)).toHaveCount(1);
 });
