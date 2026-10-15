@@ -51,6 +51,19 @@ describe("board store", () => {
     expect(Object.keys(s().items).sort()).toEqual(["a", "b"]);
   });
 
+  it("updates settings without touching undo history", () => {
+    s().setSettings({ grid: "lines" });
+    s().setSettings({ background: "#ffffff" });
+    expect(s().settings).toEqual({ background: "#ffffff", grid: "lines" });
+    expect(s().history.past).toHaveLength(0);
+  });
+
+  it("resets settings to defaults when loading a board without them", () => {
+    s().setSettings({ grid: "none" });
+    s().load({}, { x: 0, y: 0, zoom: 1 });
+    expect(s().settings.grid).toBe("dots");
+  });
+
   it("drops the redo stack after a new action", () => {
     s().add(img("a"));
     s().undo();

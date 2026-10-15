@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { addFromTransfer, fitAll } from "./app/actions";
 import { Board } from "./board/Board";
+import { isLight } from "./core/background";
 import { zoomAt } from "./core/geometry";
 import { useBoard } from "./store/board";
 import { Hint } from "./ui/Hint";
@@ -13,17 +14,18 @@ const isTyping = (e: Event) =>
 
 export function App() {
   const empty = useBoard((s) => Object.keys(s.items).length === 0);
+  const lightBoard = useBoard((s) => isLight(s.settings.background));
   const dragging = useDropAndPaste();
   useShortcuts();
 
   return (
-    <>
+    <div className={lightBoard ? "light-board" : undefined}>
       <Board />
       {empty && <Hint />}
       <Toolbar />
       {dragging && <div className="drop-outline" />}
       <Toast />
-    </>
+    </div>
   );
 }
 

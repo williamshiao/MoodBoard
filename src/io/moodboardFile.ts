@@ -1,5 +1,6 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { z } from "zod/mini";
+import { type BoardSettings, DEFAULT_SETTINGS, GRID_PATTERNS } from "../core/background";
 import type { BoardItem, Items, View } from "../core/types";
 
 /**
@@ -26,17 +27,26 @@ const BoardSchema = z.object({
   version: z.literal(1),
   view: z.object({ x: z.number(), y: z.number(), zoom: z.number().check(z.positive()) }),
   items: z.array(ItemSchema),
+  // Added after version 1 shipped; older files fall back to the defaults.
+  settings: z.optional(
+    z.object({
+      background: z.string().check(z.regex(/^#[0-9a-f]{6}$/i)),
+      grid: z.enum(GRID_PATTERNS),
+    }),
+  ),
 });
 
 export interface ImportedBoard {
   items: Items;
   view: View;
+  settings: BoardSettings;
   blobs: Map<string, Blob>;
 }
 
 export async function exportBoard(
   items: Items,
   view: View,
+  settings: BoardSettings,
   blobFor: (id: string) => Blob | undefined,
 ): Promise<Uint8Array> {
   const files: Record<string, Uint8Array> = {};
@@ -46,7 +56,9 @@ export async function exportBoard(
     if (blob) files[`images/${item.id}`] = new Uint8Array(await blob.arrayBuffer());
     list.push({ ...item, ...(blob ? { type: blob.type } : {}) });
   }
-  files["board.json"] = strToU8(JSON.stringify({ app: "moodboard", version: 1, view, items: list }));
+  files["board.json"] = strToU8(
+    JSON.stringify({ app: "moodboard", version: 1, view, settings, items: list }),
+  );
   // Images are already compressed; storing them avoids burning CPU for nothing.
   return zipSync(files, { level: 0 });
 }
@@ -67,5 +79,5 @@ export function importBoard(bytes: Uint8Array): ImportedBoard {
     }
     items[item.id] = item;
   }
-  return { items, view: board.view, blobs };
+  return { items, view: board.view, settings: board.settings ?? DEFAULT_SETTINGS, blobs };
 }

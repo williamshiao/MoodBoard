@@ -1,9 +1,12 @@
 import { type DBSchema, openDB } from "idb";
+import type { BoardSettings } from "../core/background";
 import type { Items, View } from "../core/types";
 
 interface SavedBoard {
   items: Items;
   view: View;
+  /** Missing on boards saved before board settings existed. */
+  settings?: BoardSettings;
 }
 
 interface Schema extends DBSchema {

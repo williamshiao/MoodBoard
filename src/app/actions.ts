@@ -65,8 +65,8 @@ function download(bytes: Uint8Array, name: string) {
 }
 
 export async function exportToFile() {
-  const { items, view } = useBoard.getState();
-  download(await exportBoard(items, view, blobFor), "board.moodboard");
+  const { items, view, settings } = useBoard.getState();
+  download(await exportBoard(items, view, settings, blobFor), "board.moodboard");
 }
 
 export async function importFromFile(file: File) {
@@ -76,7 +76,7 @@ export async function importFromFile(file: File) {
       rememberBlob(id, blob);
       await putBlob(id, blob);
     }
-    useBoard.getState().load(board.items, board.view);
+    useBoard.getState().load(board.items, board.view, board.settings);
   } catch (err) {
     console.warn(err);
     toast("That file isn't a MoodBoard board");
@@ -95,7 +95,7 @@ export async function restoreAndAutosave() {
         if (blob) rememberBlob(item.id, blob);
         else delete items[item.id];
       }
-      useBoard.getState().load(items, saved.view);
+      useBoard.getState().load(items, saved.view, saved.settings);
       await pruneBlobs(new Set(Object.keys(items)));
     }
   } catch (err) {
@@ -105,11 +105,11 @@ export async function restoreAndAutosave() {
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   useBoard.subscribe((s, prev) => {
-    if (s.items === prev.items && s.view === prev.view) return;
+    if (s.items === prev.items && s.view === prev.view && s.settings === prev.settings) return;
     clearTimeout(timer);
     timer = setTimeout(() => {
-      const { items, view } = useBoard.getState();
-      saveBoard({ items, view }).catch(console.warn);
+      const { items, view, settings } = useBoard.getState();
+      saveBoard({ items, view, settings }).catch(console.warn);
     }, 250);
   });
 }

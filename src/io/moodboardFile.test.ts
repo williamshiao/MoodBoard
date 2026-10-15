@@ -1,5 +1,6 @@
 import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS } from "../core/background";
 import type { BoardItem } from "../core/types";
 import { exportBoard, importBoard } from "./moodboardFile";
 
@@ -22,14 +23,24 @@ describe(".moodboard files", () => {
     };
     const view = { x: 5, y: 6, zoom: 1.5 };
 
-    const bytes = await exportBoard(items, view, (id) => (id === "a" ? blob : undefined));
+    const settings = { background: "#f4f1ea", grid: "graph" as const };
+
+    const bytes = await exportBoard(items, view, settings, (id) => (id === "a" ? blob : undefined));
     const back = importBoard(bytes);
 
     expect(back.items).toEqual(items);
     expect(back.view).toEqual(view);
+    expect(back.settings).toEqual(settings);
     const restored = back.blobs.get("a");
     expect(restored?.type).toBe("image/png");
     expect([...new Uint8Array(await (restored as Blob).arrayBuffer())]).toEqual([1, 2, 3]);
+  });
+
+  it("opens files saved before board settings existed", () => {
+    const old = { app: "moodboard", version: 1, view: { x: 0, y: 0, zoom: 1 }, items: [] };
+    expect(importBoard(zipSync({ "board.json": strToU8(JSON.stringify(old)) })).settings).toEqual(
+      DEFAULT_SETTINGS,
+    );
   });
 
   it("rejects files that are not boards", () => {

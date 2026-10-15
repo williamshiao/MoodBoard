@@ -1,10 +1,12 @@
 import { create } from "zustand";
+import { type BoardSettings, DEFAULT_SETTINGS } from "../core/background";
 import { applySide, diff, type HistoryState, record } from "../core/history";
 import type { BoardItem, Items, View } from "../core/types";
 
 interface BoardState {
   items: Items;
   view: View;
+  settings: BoardSettings;
   selectedId: string | null;
   history: HistoryState;
 
@@ -18,8 +20,10 @@ interface BoardState {
   clear(): void;
   select(id: string | null): void;
   setView(view: View): void;
+  /** Background color and grid pattern. Saved with the board; not an undo step. */
+  setSettings(patch: Partial<BoardSettings>): void;
   /** Replaces the whole board (restore or import); history starts fresh. */
-  load(items: Items, view: View): void;
+  load(items: Items, view: View, settings?: BoardSettings): void;
   undo(): void;
   redo(): void;
 }
@@ -37,6 +41,7 @@ export const useBoard = create<BoardState>()((set, get) => {
   return {
     items: {},
     view: { x: 0, y: 0, zoom: 1 },
+    settings: DEFAULT_SETTINGS,
     selectedId: null,
     history: { past: [], future: [] },
 
@@ -83,8 +88,12 @@ export const useBoard = create<BoardState>()((set, get) => {
       set({ view });
     },
 
-    load(items, view) {
-      set({ items, view, selectedId: null, history: { past: [], future: [] } });
+    setSettings(patch) {
+      set({ settings: { ...get().settings, ...patch } });
+    },
+
+    load(items, view, settings = DEFAULT_SETTINGS) {
+      set({ items, view, settings, selectedId: null, history: { past: [], future: [] } });
     },
 
     undo() {
