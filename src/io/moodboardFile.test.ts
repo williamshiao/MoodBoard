@@ -12,13 +12,16 @@ const item = (id: string, source: BoardItem["source"]): BoardItem => ({
   w: 30,
   h: 40,
   z: 1,
+  rotation: 0,
+  flipX: false,
+  flipY: false,
 });
 
 describe(".moodboard files", () => {
   it("round-trips items, view and image bytes", async () => {
     const blob = new Blob([new Uint8Array([1, 2, 3])], { type: "image/png" });
     const items = {
-      a: item("a", { kind: "blob" }),
+      a: { ...item("a", { kind: "blob" }), rotation: 33, flipX: true },
       b: item("b", { kind: "url", url: "https://x.test/b.jpg" }),
     };
     const view = { x: 5, y: 6, zoom: 1.5 };
@@ -41,6 +44,19 @@ describe(".moodboard files", () => {
     expect(importBoard(zipSync({ "board.json": strToU8(JSON.stringify(old)) })).settings).toEqual(
       DEFAULT_SETTINGS,
     );
+  });
+
+  it("defaults rotation and mirroring for files saved before they existed", () => {
+    const old = {
+      app: "moodboard",
+      version: 1,
+      view: { x: 0, y: 0, zoom: 1 },
+      items: [
+        { id: "a", source: { kind: "url", url: "https://x.test/a.png" }, x: 0, y: 0, w: 10, h: 10, z: 1 },
+      ],
+    };
+    const back = importBoard(zipSync({ "board.json": strToU8(JSON.stringify(old)) }));
+    expect(back.items.a).toMatchObject({ rotation: 0, flipX: false, flipY: false });
   });
 
   it("rejects files that are not boards", () => {

@@ -3,8 +3,9 @@ import { addFromTransfer, fitAll } from "./app/actions";
 import { Board } from "./board/Board";
 import { isLight } from "./core/background";
 import { zoomAt } from "./core/geometry";
-import { useBoard } from "./store/board";
+import { flipX, flipY, rotateBy, useBoard } from "./store/board";
 import { Hint } from "./ui/Hint";
+import { SelectionBar } from "./ui/SelectionBar";
 import { Toast } from "./ui/Toast";
 import { Toolbar } from "./ui/Toolbar";
 
@@ -23,6 +24,7 @@ export function App() {
       <Board />
       {empty && <Hint />}
       <Toolbar />
+      <SelectionBar />
       {dragging && <div className="drop-outline" />}
       <Toast />
     </div>
@@ -81,9 +83,19 @@ function useShortcuts() {
       const s = useBoard.getState();
       const mod = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
-      if ((e.key === "Delete" || e.key === "Backspace") && s.selectedId) {
+      const selection = s.selectedIds;
+      if ((e.key === "Delete" || e.key === "Backspace") && selection.length) {
         e.preventDefault();
-        s.remove(s.selectedId);
+        s.remove(selection);
+      } else if (mod && key === "a") {
+        e.preventDefault();
+        s.selectOnly(Object.keys(s.items));
+      } else if (!mod && selection.length && key === "h") {
+        s.update(selection, flipX);
+      } else if (!mod && selection.length && key === "v") {
+        s.update(selection, flipY);
+      } else if (!mod && selection.length && key === "r") {
+        s.update(selection, rotateBy(e.shiftKey ? -90 : 90));
       } else if (mod && key === "z") {
         e.preventDefault();
         if (e.shiftKey) s.redo();
@@ -97,7 +109,7 @@ function useShortcuts() {
       } else if (!mod && key === "f") {
         fitAll();
       } else if (e.key === "Escape") {
-        s.select(null);
+        s.selectOnly([]);
       }
     };
     window.addEventListener("keydown", onKey);

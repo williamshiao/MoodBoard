@@ -1,6 +1,7 @@
 import { fitSize, fitView, screenToWorld } from "../core/geometry";
 import { newId } from "../core/id";
-import type { BoardItem, Point } from "../core/types";
+import { rotatedBounds } from "../core/transform";
+import { type BoardItem, type Point, withTransformDefaults } from "../core/types";
 import { extractSources, type TransferLike } from "../ingest/extract";
 import { loadSource, measureImage } from "../ingest/load";
 import { exportBoard, importBoard } from "../io/moodboardFile";
@@ -52,7 +53,7 @@ export async function addFromTransfer(transfer: TransferLike, screen: Point) {
 
 export function fitAll() {
   const { items, setView } = useBoard.getState();
-  setView(fitView(Object.values(items), viewport()));
+  setView(fitView(Object.values(items).map(rotatedBounds), viewport()));
 }
 
 function download(bytes: Uint8Array, name: string) {
@@ -88,12 +89,15 @@ export async function restoreAndAutosave() {
   try {
     const saved = await loadBoard();
     if (saved) {
-      const items = { ...saved.items };
-      for (const item of Object.values(items)) {
-        if (item.source.kind !== "blob") continue;
-        const blob = await getBlob(item.id);
-        if (blob) rememberBlob(item.id, blob);
-        else delete items[item.id];
+      const items: Record<string, BoardItem> = {};
+      for (const stored of Object.values(saved.items)) {
+        const item = withTransformDefaults(stored);
+        if (item.source.kind === "blob") {
+          const blob = await getBlob(item.id);
+          if (!blob) continue;
+          rememberBlob(item.id, blob);
+        }
+        items[item.id] = item;
       }
       useBoard.getState().load(items, saved.view, saved.settings);
       await pruneBlobs(new Set(Object.keys(items)));
