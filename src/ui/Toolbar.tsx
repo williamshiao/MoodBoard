@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from "react";
-import { exportToFile, fitAll, importFromFile } from "../app/actions";
+import { exportToFile, exportToPng, fitAll, importFromFile } from "../app/actions";
 import { useBoard } from "../store/board";
 import { SettingsPanel } from "./SettingsPanel";
+import { toggleShortcutSheet } from "./Shortcuts";
 
 export function Toolbar() {
   const zoom = useBoard((s) => s.view.zoom);
@@ -43,6 +44,9 @@ export function Toolbar() {
         <button type="button" title="Save the board to a .moodboard file" onClick={exportToFile}>
           Export
         </button>
+        <button type="button" title="Save the board as a PNG picture" disabled={empty} onClick={exportToPng}>
+          PNG
+        </button>
         <button type="button" title="Open a .moodboard file" onClick={() => fileInput.current?.click()}>
           Import
         </button>
@@ -83,6 +87,14 @@ export function Toolbar() {
           onClick={() => setSettingsOpen((o) => !o)}
         >
           Board
+        </button>
+        <button
+          type="button"
+          title="Keyboard shortcuts (?)"
+          aria-label="Shortcuts"
+          onClick={toggleShortcutSheet}
+        >
+          ?
         </button>
       </div>
       {settingsOpen && <SettingsPanel onClose={closeSettings} />}

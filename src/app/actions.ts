@@ -5,6 +5,7 @@ import { type BoardItem, type Point, withItemDefaults } from "../core/types";
 import { extractSources, type TransferLike } from "../ingest/extract";
 import { loadSource, measureImage } from "../ingest/load";
 import { exportBoard, importBoard } from "../io/moodboardFile";
+import { renderPng } from "../io/png";
 import { getBlob, loadBoard, pruneBlobs, putBlob, saveBoard } from "../storage/db";
 import { blobFor, rememberBlob, srcFor } from "../storage/images";
 import { useBoard } from "../store/board";
@@ -56,8 +57,8 @@ export function fitAll() {
   setView(fitView(Object.values(items).map(rotatedBounds), viewport()));
 }
 
-function download(bytes: Uint8Array, name: string) {
-  const url = URL.createObjectURL(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: "application/zip" }));
+function download(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = name;
@@ -67,7 +68,30 @@ function download(bytes: Uint8Array, name: string) {
 
 export async function exportToFile() {
   const { items, view, settings } = useBoard.getState();
-  download(await exportBoard(items, view, settings, blobFor), "board.moodboard");
+  const bytes = await exportBoard(items, view, settings, blobFor);
+  download(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: "application/zip" }), "board.moodboard");
+}
+
+/** Saves the whole board as one PNG picture, for sharing or printing. */
+export async function exportToPng() {
+  const { items, settings } = useBoard.getState();
+  try {
+    const png = await renderPng(items, settings.background, srcFor);
+    if (!png) {
+      toast("Add some images first");
+      return;
+    }
+    download(png.blob, "board.png");
+    if (png.skipped)
+      toast(
+        png.skipped === 1
+          ? "1 linked image was left out: its site doesn't allow copying"
+          : `${png.skipped} linked images were left out: their sites don't allow copying`,
+      );
+  } catch (err) {
+    console.warn(err);
+    toast("Couldn't save the picture");
+  }
 }
 
 export async function importFromFile(file: File) {

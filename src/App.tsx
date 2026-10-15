@@ -6,6 +6,7 @@ import { zoomAt } from "./core/geometry";
 import { flipX, flipY, rotateBy, useBoard } from "./store/board";
 import { Hint } from "./ui/Hint";
 import { SelectionBar } from "./ui/SelectionBar";
+import { Shortcuts, toggleShortcutSheet, useShortcutSheet } from "./ui/Shortcuts";
 import { Toast } from "./ui/Toast";
 import { Toolbar } from "./ui/Toolbar";
 
@@ -26,6 +27,7 @@ export function App() {
       <Toolbar />
       <SelectionBar />
       {dragging && <div className="drop-outline" />}
+      <Shortcuts />
       <Toast />
     </div>
   );
@@ -80,6 +82,12 @@ function useShortcuts() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isTyping(e)) return;
+      if (e.key === "?") {
+        toggleShortcutSheet();
+        return;
+      }
+      // While the sheet is open it owns the keyboard (Esc closes it).
+      if (useShortcutSheet.getState().open) return;
       const s = useBoard.getState();
       const mod = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
