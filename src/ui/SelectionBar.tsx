@@ -1,3 +1,4 @@
+import { isOneGroup } from "../core/groups";
 import type { LayerMove } from "../core/layers";
 import { flipX, flipY, resetEdits, rotateBy, useBoard } from "../store/board";
 
@@ -18,6 +19,8 @@ export function SelectionBar() {
   const desaturated = useBoard(
     (s) => s.selectedIds.length > 0 && s.selectedIds.every((id) => s.items[id]?.grayscale),
   );
+  const grouped = useBoard((s) => isOneGroup(s.items, s.selectedIds));
+  const anyGrouped = useBoard((s) => s.selectedIds.some((id) => s.items[id]?.group));
   if (!count) return null;
 
   return (
@@ -75,6 +78,20 @@ export function SelectionBar() {
         To back
       </button>
       <span className="sep" />
+      {count > 1 && !grouped && (
+        <button
+          type="button"
+          title="Group so they select and move together (Ctrl+G)"
+          onClick={() => useBoard.getState().group()}
+        >
+          Group
+        </button>
+      )}
+      {anyGrouped && (
+        <button type="button" title="Ungroup (Ctrl+Shift+G)" onClick={() => useBoard.getState().ungroup()}>
+          Ungroup
+        </button>
+      )}
       <button
         type="button"
         className="danger"

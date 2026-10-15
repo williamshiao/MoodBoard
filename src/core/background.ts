@@ -7,9 +7,20 @@ export interface BoardSettings {
   /** Board background as a #rrggbb hex color. */
   background: string;
   grid: GridPattern;
+  /** Snap moving images to the edges and centres of others. */
+  snap: boolean;
 }
 
-export const DEFAULT_SETTINGS: BoardSettings = { background: "#1b1b1e", grid: "dots" };
+export const DEFAULT_SETTINGS: BoardSettings = { background: "#1b1b1e", grid: "dots", snap: true };
+
+/** Fills in settings that boards saved by older versions are missing. */
+export const withSettingsDefaults = (
+  s?: { [K in keyof BoardSettings]?: BoardSettings[K] | undefined },
+): BoardSettings => ({
+  background: s?.background ?? DEFAULT_SETTINGS.background,
+  grid: s?.grid ?? DEFAULT_SETTINGS.grid,
+  snap: s?.snap ?? DEFAULT_SETTINGS.snap,
+});
 
 /** Preset backgrounds offered as one-click swatches. */
 export const BACKGROUND_PRESETS = [

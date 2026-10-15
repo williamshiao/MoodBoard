@@ -9,7 +9,8 @@ export function Hint() {
         <br />
         Drag to move · handles to resize, stretch and rotate · Del to remove
         <br />
-        Shift+click or Shift+drag to select several · H/V mirror · R rotate · I invert · D desaturate
+        Shift+click or Shift+drag to select several · Ctrl+G to group · H/V mirror · R rotate · I invert · D
+        desaturate
         <br />
         Wheel to zoom · drag empty space to pan · F to fit all · Ctrl+Z to undo
       </div>

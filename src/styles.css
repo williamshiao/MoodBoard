@@ -117,6 +117,29 @@ body,
   transform: translate(-50%, -50%) scale(var(--inv, 1)) translateY(-26px);
 }
 
+.guide {
+  position: absolute;
+  background: #ff5fa2;
+  pointer-events: none;
+  z-index: 100000;
+}
+.guide-x {
+  width: calc(1px * var(--inv, 1));
+  transform: translateX(-50%);
+}
+.guide-y {
+  height: calc(1px * var(--inv, 1));
+  transform: translateY(-50%);
+}
+
+.group-outline {
+  position: absolute;
+  outline: calc(1px * var(--inv, 1)) dashed var(--accent);
+  outline-offset: calc(6px * var(--inv, 1));
+  pointer-events: none;
+  z-index: 100000;
+}
+
 .marquee {
   position: absolute;
   border: calc(1px * var(--inv, 1)) solid var(--accent);
@@ -374,7 +397,8 @@ body,
   background: var(--ui-hover);
 }
 
-.selection-bar button[aria-pressed="true"] {
+.selection-bar button[aria-pressed="true"],
+.toolbar button[aria-pressed="true"] {
   background: var(--ui-hover);
   color: var(--accent);
 }

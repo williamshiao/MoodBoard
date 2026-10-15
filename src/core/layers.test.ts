@@ -7,7 +7,17 @@ const stack = (...ids: string[]): Items =>
   Object.fromEntries(
     ids.map((id, i): [string, BoardItem] => [
       id,
-      { id, source: { kind: "blob" }, x: 0, y: 0, w: 1, h: 1, z: (i + 1) * 10, ...ITEM_DEFAULTS },
+      {
+        id,
+        source: { kind: "blob" },
+        x: 0,
+        y: 0,
+        w: 1,
+        h: 1,
+        z: (i + 1) * 10,
+        ...ITEM_DEFAULTS,
+        group: null,
+      },
     ]),
   );
 

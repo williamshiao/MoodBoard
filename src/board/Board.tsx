@@ -1,6 +1,8 @@
 import { type PointerEvent, useEffect, useRef, useState, type WheelEvent } from "react";
 import { backgroundStyle } from "../core/background";
-import { screenToWorld, zoomAt } from "../core/geometry";
+import { boundsOf, screenToWorld, zoomAt } from "../core/geometry";
+import { groupBounds, withGroups } from "../core/groups";
+import { type Guide, SNAP_DISTANCE, snapRect } from "../core/snap";
 import {
   centerOf,
   HANDLES,
@@ -16,7 +18,7 @@ import { ItemView } from "./ItemView";
 
 type Gesture =
   | { kind: "pan"; start: Point; view: View }
-  | { kind: "move"; start: Point; before: BoardItem[] }
+  | { kind: "move"; start: Point; before: BoardItem[]; bounds: Rect | null; others: Rect[] }
   | { kind: "resize"; start: Point; before: BoardItem; handle: Handle }
   | { kind: "rotate"; before: BoardItem }
   | { kind: "marquee"; origin: Point; base: readonly string[] };
@@ -36,6 +38,7 @@ export function Board() {
   const gesture = useRef<Gesture | null>(null);
   const [panning, setPanning] = useState(false);
   const [marquee, setMarquee] = useState<Rect | null>(null);
+  const [guides, setGuides] = useState<Guide[]>([]);
   const boardRef = useRef<HTMLDivElement>(null);
 
   // React's onWheel is passive, so zoom needs a native listener to stop the page scrolling.
@@ -98,7 +101,11 @@ export function Board() {
     if (!s.selectedIds.includes(item.id)) s.select(item.id);
     const { items, selectedIds } = useBoard.getState();
     const before = selectedIds.flatMap((id) => (items[id] ? [items[id]] : []));
-    gesture.current = { kind: "move", start, before };
+    // Snap targets are fixed for the whole drag, so they are measured once here.
+    const others = Object.values(items)
+      .filter((i) => !selectedIds.includes(i.id))
+      .map(rotatedBounds);
+    gesture.current = { kind: "move", start, before, bounds: boundsOf(before.map(rotatedBounds)), others };
   }
 
   function onPointerMove(e: PointerEvent<HTMLDivElement>) {
@@ -112,8 +119,16 @@ export function Board() {
         s.setView({ ...g.view, x: g.view.x + pointer.x - g.start.x, y: g.view.y + pointer.y - g.start.y });
         break;
       case "move": {
-        const dx = (pointer.x - g.start.x) / s.view.zoom;
-        const dy = (pointer.y - g.start.y) / s.view.zoom;
+        let dx = (pointer.x - g.start.x) / s.view.zoom;
+        let dy = (pointer.y - g.start.y) / s.view.zoom;
+        // Alt holds snapping off for one drag.
+        if (s.settings.snap && !e.altKey && g.bounds) {
+          const moved = { ...g.bounds, x: g.bounds.x + dx, y: g.bounds.y + dy };
+          const snap = snapRect(moved, g.others, SNAP_DISTANCE / s.view.zoom);
+          dx += snap.dx;
+          dy += snap.dy;
+          showGuides(snap.guides);
+        } else showGuides([]);
         s.preview(Object.fromEntries(g.before.map((i) => [i.id, { x: i.x + dx, y: i.y + dy }])));
         break;
       }
@@ -133,10 +148,22 @@ export function Board() {
         const hits = Object.values(s.items)
           .filter((i) => rectsIntersect(rect, rotatedBounds(i)))
           .map((i) => i.id);
-        s.selectOnly([...new Set([...g.base, ...hits])]);
+        s.selectOnly(withGroups(s.items, [...g.base, ...hits]));
         break;
       }
     }
+  }
+
+  /** Updates the guide lines, skipping the re-render when there were none and still are none. */
+  function showGuides(next: Guide[]) {
+    setGuides((prev) => (prev.length === 0 && next.length === 0 ? prev : next));
+  }
+
+  /** Double-clicking a grouped image picks it out on its own, so it can be resized or edited alone. */
+  function onDoubleClick(e: React.MouseEvent<HTMLDivElement>) {
+    // Pointer capture retargets the event to the board, so find the image under the cursor instead.
+    const id = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>(".item")?.dataset.id;
+    if (id) useBoard.getState().selectSingle(id);
   }
 
   function endGesture() {
@@ -144,6 +171,7 @@ export function Board() {
     gesture.current = null;
     setPanning(false);
     setMarquee(null);
+    showGuides([]);
     if (!g) return;
     const { commit } = useBoard.getState();
     if (g.kind === "move") commit(g.before);
@@ -155,12 +183,15 @@ export function Board() {
       ref={boardRef}
       className={`board${panning ? " panning" : ""}`}
       data-testid="board"
+      role="application"
+      aria-label="Mood board"
       style={backgroundStyle(settings, view)}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endGesture}
       onPointerCancel={endGesture}
       onWheel={onWheel}
+      onDoubleClick={onDoubleClick}
     >
       <div
         className="world"
@@ -172,6 +203,19 @@ export function Board() {
         }
       >
         {ids ? ids.split(",").map((id) => <ItemView key={id} id={id} />) : null}
+        <GroupOutlines />
+        {guides.map((g) => (
+          <div
+            key={`${g.axis}${g.at}`}
+            className={`guide guide-${g.axis}`}
+            data-testid="snap-guide"
+            style={
+              g.axis === "x"
+                ? { left: g.at, top: g.from, height: g.to - g.from }
+                : { top: g.at, left: g.from, width: g.to - g.from }
+            }
+          />
+        ))}
         {marquee && (
           <div
             className="marquee"
@@ -182,4 +226,18 @@ export function Board() {
       </div>
     </div>
   );
+}
+
+/** Dashed boxes around the groups that are selected. */
+function GroupOutlines() {
+  const items = useBoard((s) => s.items);
+  const selectedIds = useBoard((s) => s.selectedIds);
+  return groupBounds(items, selectedIds).map((b) => (
+    <div
+      key={`${b.x},${b.y}`}
+      className="group-outline"
+      data-testid="group-outline"
+      style={{ left: b.x, top: b.y, width: b.w, height: b.h }}
+    />
+  ));
 }
