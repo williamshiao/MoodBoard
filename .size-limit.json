@@ -1,0 +1,4 @@
+[
+  { "name": "App JS (brotli)", "path": "dist/assets/*.js", "limit": "85 kB" },
+  { "name": "App CSS (brotli)", "path": "dist/assets/*.css", "limit": "4 kB" }
+]
