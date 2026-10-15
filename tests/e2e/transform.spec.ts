@@ -1,13 +1,20 @@
 import { expect, type Page, test } from "@playwright/test";
 import { box, dropAll, items } from "./helpers";
 
+/**
+ * The image's rotation (inline style) and mirroring (computed matrix, which every
+ * browser writes the same way; Firefox shortens scale(-1, -1) to scale(-1)).
+ */
 const transformOf = (page: Page, index = 0) =>
   items(page)
     .nth(index)
     .evaluate((el) => ({
       item: el.style.transform,
-      img: (el.querySelector("img") as HTMLElement).style.transform,
+      img: getComputedStyle(el.querySelector("img") as HTMLElement).transform,
     }));
+
+const MIRROR_X = "matrix(-1, 0, 0, 1, 0, 0)";
+const MIRROR_XY = "matrix(-1, 0, 0, -1, 0, 0)";
 
 async function dragBy(page: Page, from: { x: number; y: number }, dx: number, dy: number) {
   await page.mouse.move(from.x, from.y);
@@ -56,15 +63,15 @@ test("rotates with the rotate handle, snapping with Shift", async ({ page }) => 
 test("mirrors and rotates from the keyboard and the selection bar", async ({ page }) => {
   await dropAll(page, [[500, 360]]);
   await page.keyboard.press("h");
-  expect((await transformOf(page)).img).toBe("scale(-1, 1)");
+  expect((await transformOf(page)).img).toBe(MIRROR_X);
   await page.getByRole("button", { name: "Flip ↕" }).click();
-  expect((await transformOf(page)).img).toBe("scale(-1, -1)");
+  expect((await transformOf(page)).img).toBe(MIRROR_XY);
   await page.keyboard.press("r");
   expect((await transformOf(page)).item).toBe("rotate(90deg)");
   await page.keyboard.press("Shift+r");
   expect((await transformOf(page)).item).toBe("");
   await page.getByRole("button", { name: "Reset" }).click();
-  expect(await transformOf(page)).toEqual({ item: "", img: "" });
+  expect(await transformOf(page)).toEqual({ item: "", img: "none" });
 });
 
 test("Shift+click selects several images, which then move together", async ({ page }) => {
@@ -129,5 +136,5 @@ test("keeps rotation and mirroring after a reload", async ({ page }) => {
   await page.keyboard.press("h");
   await page.waitForTimeout(400); // autosave is debounced
   await page.reload();
-  expect(await transformOf(page)).toEqual({ item: "rotate(90deg)", img: "scale(-1, 1)" });
+  expect(await transformOf(page)).toEqual({ item: "rotate(90deg)", img: MIRROR_X });
 });
