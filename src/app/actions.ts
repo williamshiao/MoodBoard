@@ -1,7 +1,7 @@
 import { fitSize, fitView, screenToWorld } from "../core/geometry";
 import { newId } from "../core/id";
 import { rotatedBounds } from "../core/transform";
-import { type BoardItem, type Point, withTransformDefaults } from "../core/types";
+import { type BoardItem, type Point, withItemDefaults } from "../core/types";
 import { extractSources, type TransferLike } from "../ingest/extract";
 import { loadSource, measureImage } from "../ingest/load";
 import { exportBoard, importBoard } from "../io/moodboardFile";
@@ -91,7 +91,7 @@ export async function restoreAndAutosave() {
     if (saved) {
       const items: Record<string, BoardItem> = {};
       for (const stored of Object.values(saved.items)) {
-        const item = withTransformDefaults(stored);
+        const item = withItemDefaults(stored);
         if (item.source.kind === "blob") {
           const blob = await getBlob(item.id);
           if (!blob) continue;

@@ -9,6 +9,8 @@ the clipboard) and arrange them on an infinite canvas.
 
 - Drag and drop image files or images from any web page, or paste with Ctrl+V
 - Move, resize from 8 handles (corners keep proportions, sides stretch), rotate (Shift snaps to 15°), mirror (H / V), delete
+- Invert colours (I) and desaturate (D) without changing the original image
+- Layering: bring to front or forward, send backward or to back (Ctrl+] / Ctrl+[, add Shift for front/back)
 - Select several images with Shift+click, Shift+drag or Ctrl+A, then move, mirror, rotate or delete them together
 - Pan by dragging empty space, zoom toward the cursor with the wheel or a pinch, press F to fit everything
 - Undo/redo for every change (Ctrl+Z / Ctrl+Shift+Z)
@@ -65,7 +67,7 @@ pnpm build && pnpm size
 1. ~~Foundation: project, prototype port, undo/redo, CI and deploy~~
 2. ~~Board settings: background color and grid patterns~~
 3. ~~Transform tools: multi-select, 8-handle resize/stretch, rotate, mirror~~
-4. Look tools: invert, desaturate, opacity, layering
+4. ~~Look tools: invert, desaturate, layering~~
 5. Organizing: snapping guides (toggle) and groups
 6. Desktop: Tauri 2 build with native image download
 7. Polish: offline install (PWA), export as PNG, shortcut sheet, performance pass

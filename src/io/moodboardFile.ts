@@ -1,7 +1,7 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { z } from "zod/mini";
 import { type BoardSettings, DEFAULT_SETTINGS, GRID_PATTERNS } from "../core/background";
-import { type BoardItem, type Items, type View, withTransformDefaults } from "../core/types";
+import { type BoardItem, type Items, type View, withItemDefaults } from "../core/types";
 
 /**
  * A .moodboard file is a zip holding board.json and the original image bytes,
@@ -19,10 +19,12 @@ const ItemSchema = z.object({
   w: z.number().check(z.positive()),
   h: z.number().check(z.positive()),
   z: z.number(),
-  // Transform fields were added after version 1 shipped; older files default them.
+  // Edit fields were added after version 1 shipped; older files default them.
   rotation: z.optional(z.number()),
   flipX: z.optional(z.boolean()),
   flipY: z.optional(z.boolean()),
+  invert: z.optional(z.boolean()),
+  grayscale: z.optional(z.boolean()),
   type: z.optional(z.string()),
 });
 
@@ -81,7 +83,7 @@ export function importBoard(bytes: Uint8Array): ImportedBoard {
       if (!data) continue;
       blobs.set(item.id, new Blob([data as Uint8Array<ArrayBuffer>], { type: type ?? "" }));
     }
-    items[item.id] = withTransformDefaults(item);
+    items[item.id] = withItemDefaults(item);
   }
   return { items, view: board.view, settings: board.settings ?? DEFAULT_SETTINGS, blobs };
 }

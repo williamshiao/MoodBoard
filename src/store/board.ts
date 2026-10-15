@@ -1,10 +1,11 @@
 import { create } from "zustand";
 import { type BoardSettings, DEFAULT_SETTINGS } from "../core/background";
 import { applySide, diff, type HistoryState, record } from "../core/history";
+import { type LayerMove, restack } from "../core/layers";
 import { normalizeDegrees } from "../core/transform";
-import { type BoardItem, type Items, TRANSFORM_DEFAULTS, type View } from "../core/types";
+import { type BoardItem, ITEM_DEFAULTS, type Items, type View } from "../core/types";
 
-type NewItem = Omit<BoardItem, "z" | keyof typeof TRANSFORM_DEFAULTS>;
+type NewItem = Omit<BoardItem, "z" | keyof typeof ITEM_DEFAULTS>;
 
 interface BoardState {
   items: Items;
@@ -22,9 +23,13 @@ interface BoardState {
   commit(before: readonly BoardItem[]): void;
   /** Applies `fn` to each listed item as one undo step. */
   update(ids: readonly string[], fn: (item: BoardItem) => Partial<BoardItem>): void;
+  /** Turns a colour filter on for every selected image, or off if they all have it (undoable). */
+  toggleFilter(field: "invert" | "grayscale"): void;
+  /** Moves the selected images up or down the stack (undoable). */
+  restack(move: LayerMove): void;
   remove(ids: readonly string[]): void;
   clear(): void;
-  /** Selects one item (raising it to the top), or toggles it when `toggle` is set. */
+  /** Selects one item, or toggles it in or out of the selection when `toggle` is set. */
   select(id: string, toggle?: boolean): void;
   selectOnly(ids: readonly string[]): void;
   setView(view: View): void;
@@ -42,7 +47,7 @@ const topZ = (items: Items) => Object.values(items).reduce((m, i) => Math.max(m,
 export const flipX = (i: BoardItem) => ({ flipX: !i.flipX });
 export const flipY = (i: BoardItem) => ({ flipY: !i.flipY });
 export const rotateBy = (deg: number) => (i: BoardItem) => ({ rotation: normalizeDegrees(i.rotation + deg) });
-export const resetTransform = () => ({ ...TRANSFORM_DEFAULTS });
+export const resetEdits = () => ({ ...ITEM_DEFAULTS });
 
 export const useBoard = create<BoardState>()((set, get) => {
   /** Applies `updates` to the items and records them as one undo step. */
@@ -66,7 +71,7 @@ export const useBoard = create<BoardState>()((set, get) => {
     history: { past: [], future: [] },
 
     add(item) {
-      change({ [item.id]: { ...TRANSFORM_DEFAULTS, ...item, z: topZ(get().items) + 1 } });
+      change({ [item.id]: { ...ITEM_DEFAULTS, ...item, z: topZ(get().items) + 1 } });
       set({ selectedIds: [item.id] });
     },
 
@@ -104,6 +109,18 @@ export const useBoard = create<BoardState>()((set, get) => {
       if (Object.keys(updates).length) change(updates);
     },
 
+    toggleFilter(field) {
+      const { items, selectedIds } = get();
+      const allOn = selectedIds.every((id) => items[id]?.[field]);
+      get().update(selectedIds, () => ({ [field]: !allOn }));
+    },
+
+    restack(move) {
+      const { items, selectedIds } = get();
+      const z = restack(items, selectedIds, move);
+      get().update(Object.keys(z), (i) => ({ z: z[i.id] ?? i.z }));
+    },
+
     remove(ids) {
       const updates: Record<string, null> = {};
       for (const id of ids) if (get().items[id]) updates[id] = null;
@@ -118,14 +135,11 @@ export const useBoard = create<BoardState>()((set, get) => {
 
     select(id, toggle = false) {
       const { items, selectedIds } = get();
-      const item = items[id];
-      if (!item) return;
+      if (!items[id]) return;
       if (toggle && selectedIds.includes(id)) {
         set({ selectedIds: selectedIds.filter((s) => s !== id) });
         return;
       }
-      // Selecting raises the image to the top. This is not an undo step on its own.
-      if (item.z !== topZ(items)) set({ items: { ...items, [id]: { ...item, z: topZ(items) + 1 } } });
       set({ selectedIds: toggle ? [...selectedIds, id] : [id] });
     },
 

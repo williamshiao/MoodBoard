@@ -374,6 +374,11 @@ body,
   background: var(--ui-hover);
 }
 
+.selection-bar button[aria-pressed="true"] {
+  background: var(--ui-hover);
+  color: var(--accent);
+}
+
 .selection-bar button.danger {
   color: var(--danger);
 }
