@@ -12,7 +12,7 @@ export function Hint() {
         Shift+click or Shift+drag to select several · Ctrl+G to group · H/V mirror · R rotate · I invert · D
         desaturate
         <br />
-        Wheel to zoom · drag empty space to pan · F to fit all · Ctrl+Z to undo
+        Wheel to zoom · drag empty space to pan · F to fit all · Ctrl+Z to undo · ? for all shortcuts
       </div>
     </div>
   );

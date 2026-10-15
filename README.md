@@ -19,6 +19,9 @@ the clipboard) and arrange them on an infinite canvas.
 - Undo/redo for every change (Ctrl+Z / Ctrl+Shift+Z)
 - Board settings: any background color, and a dots, lines, graph-paper or blank grid
 - Autosaves in the browser. Export/Import a portable `.moodboard` file (zip of board.json + original images)
+- Save the whole board as a PNG picture, with every rotation, mirror and colour edit applied
+- Works offline after the first visit, and can be installed as an app from the browser
+- Press ? for a sheet of every shortcut
 
 ## Desktop app
 
@@ -85,4 +88,5 @@ pnpm tauri build  # desktop installers for this OS
 4. ~~Look tools: invert, desaturate, layering~~
 5. ~~Organizing: snapping guides (toggle) and groups~~
 6. ~~Desktop: Tauri 2 build with native image download~~
-7. Polish: offline install (PWA), export as PNG, shortcut sheet, performance pass
+7. ~~Polish: offline install (PWA), export as PNG, shortcut sheet~~
+8. Performance pass for very large boards (hundreds of full-size images)
